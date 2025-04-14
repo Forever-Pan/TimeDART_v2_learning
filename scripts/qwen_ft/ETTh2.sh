@@ -30,4 +30,4 @@ python -u run.py \
     --train_epochs 5 \
     --pred_len 96 \
     --test_pred_len 96 \
-    --gpu 4
+    --gpu 2

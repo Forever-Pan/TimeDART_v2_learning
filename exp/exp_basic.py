@@ -48,11 +48,18 @@ class Exp_Basic(object):
         """
         手动迁移预训练权重，仅迁移 embedding、sos token 和 encoder。
         """
-        # 迁移 embedding 权重
-        target_model.enc_embedding.load_state_dict(pretrained_model.enc_embedding.state_dict())
+        try:
+            # 迁移 embedding 权重
+            target_model.enc_embedding.load_state_dict(pretrained_model.enc_embedding.state_dict())
 
-        # 迁移 sos token
-        target_model.sos_token.data.copy_(pretrained_model.sos_token.data)
+            # 迁移 sos token
+            target_model.sos_token.data.copy_(pretrained_model.sos_token.data)
 
-        # 迁移 encoder 权重
-        target_model.encoder.load_state_dict(pretrained_model.encoder.state_dict())
+            # 迁移 encoder 权重
+            target_model.encoder.load_state_dict(pretrained_model.encoder.state_dict())
+
+            # 如果迁移成功，打印反馈信息
+            print("Successfully transferred pretrained weights!")
+        except Exception as e:
+            # 如果迁移失败，打印错误信息
+            print(f"Error occurred during weight transfer: {e}")

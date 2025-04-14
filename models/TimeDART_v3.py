@@ -247,26 +247,37 @@ class Model(nn.Module):
             x = x / stdevs
 
         x = self.channel_independence(x)  # [batch_size * num_features, input_len, 1]
-        x = self.patch(x)  # [batch_size * num_features, seq_len, patch_len]
-        x = self.enc_embedding(x)  # [batch_size * num_features, seq_len, d_model]
-        x = self.positional_encoding(x)  # [batch_size * num_features, seq_len, d_model]
-        x = self.encoder(
-            x,
-            is_mask=False,
-        )  # [batch_size * num_features, seq_len, d_model]
-        x = x.reshape(
+        x_patch = self.patch(x)  # [batch_size * num_features, seq_len, patch_len]
+        x_embedding = self.enc_embedding(x_patch)  # [batch_size * num_features, seq_len, d_model]
+        # x = self.positional_encoding(x)  # [batch_size * num_features, seq_len, d_model]
+        x_embedding_bias = self.add_sos_token_and_drop_last(x_embedding)  # Add SOS token
+        x_embedding_bias = self.positional_encoding(x_embedding_bias)  # Add positional encoding
+
+        # x = self.encoder(
+        #     x,
+        #     is_mask=False,
+        # )  # [batch_size * num_features, seq_len, d_model]
+
+        # 依旧是 Qwen2.5-0.5B 的 encoder 需要指定 inputs_embeds 参数
+        # Get encoder outputs from look-back window
+        encoder_outputs = self.encoder(
+            inputs_embeds=x_embedding_bias, output_hidden_states=True, return_dict=True
+        )
+        x_out = encoder_outputs.hidden_states[-1]  # Use last hidden state as KV
+
+        x_out = x_out.reshape(
             batch_size, num_features, -1, self.d_model
         )  # [batch_size, num_features, seq_len, d_model]
 
         # forecast
-        x = self.head(x)  # [bs, pred_len, n_vars]
+        x_out = self.head(x_out)  # [bs, pred_len, n_vars]
 
         # denormalization
         if self.use_norm:
-            x = x * (stdevs[:, 0, :].unsqueeze(1)).repeat(1, self.pred_len, 1)
-            x = x + (means[:, 0, :].unsqueeze(1)).repeat(1, self.pred_len, 1)
+            x_out = x_out * (stdevs[:, 0, :].unsqueeze(1)).repeat(1, self.pred_len, 1)
+            x_out = x_out + (means[:, 0, :].unsqueeze(1)).repeat(1, self.pred_len, 1)
 
-        return x
+        return x_out
     
     def forward(self, batch_x):
 

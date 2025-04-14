@@ -64,8 +64,8 @@ class Exp_TimeDART_v3(Exp_Basic):
             pretrained_model = torch.load(self.args.load_checkpoints, map_location=transfer_device)
             
             # 确保预训练模型是一个 state_dict
-            if isinstance(pretrained_model, dict) and 'model_state_dict' in pretrained_model:
-                pretrained_model = pretrained_model['model_state_dict']
+            # if isinstance(pretrained_model, dict) and 'model_state_dict' in pretrained_model:
+            #     pretrained_model = pretrained_model['model_state_dict']
             
             # 将预训练模型加载到一个临时模型实例中
             temp_model = self.model_dict[self.args.model].Model(self.args).to(transfer_device)
@@ -124,6 +124,9 @@ class Exp_TimeDART_v3(Exp_Basic):
 
             # current learning rate
             print("Current learning rate: {:.7f}".format(model_scheduler.get_last_lr()[0]))
+
+            # 添加进度条
+            train_loader = tqdm(train_loader, desc=f"Pretraining Epoch {epoch+1}/{self.args.train_epochs}")
 
             train_loss = self.pretrain_one_epoch(
                 train_loader, model_optim, model_scheduler
@@ -259,7 +262,9 @@ class Exp_TimeDART_v3(Exp_Basic):
         for epoch in range(self.args.train_epochs):
             iter_count = 0
             train_loss = []
-            train_loader = tqdm(train_loader, desc="Training")
+            # train_loader = tqdm(train_loader, desc="Training")
+            # 优化一下进度条显示
+            train_loader = tqdm(train_loader, desc=f"Training Epoch {epoch+1}/{self.args.train_epochs}")
 
             print("Current learning rate: {:.7f}".format(model_optim.param_groups[0]['lr']))
 
@@ -378,6 +383,8 @@ class Exp_TimeDART_v3(Exp_Basic):
             os.makedirs(folder_path)
 
         self.model.eval()
+        # 进度条显示
+        test_loader = tqdm(test_loader, desc="Testing")
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(
                 test_loader
