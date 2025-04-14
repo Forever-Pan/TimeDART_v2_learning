@@ -1,0 +1,34 @@
+for pred_len in 96 192 336 720; do
+    python -u run.py \
+        --task_name finetune \
+        --is_training 1 \
+        --root_path ./datasets/traffic/ \
+        --data_path traffic.csv \
+        --model_id Traffic \
+        --model SimMTM \
+        --data Traffic \
+        --features M \
+        --input_len 336 \
+        --label_len 48 \
+        --pred_len $pred_len \
+        --e_layers 3 \
+        --enc_in 862 \
+        --dec_in 862 \
+        --c_out 862 \
+        --n_heads 16 \
+        --d_model 128 \
+        --d_ff 256 \
+        --patch_len 8 \
+        --stride 8 \
+        --dropout 0.2 \
+        --head_dropout 0.1 \
+        --batch_size 8 \
+        --gpu 0 \
+        --lr_decay 0.5 \
+        --lradj step \
+        --time_steps 1000 \
+        --scheduler cosine \
+        --patience 3 \
+        --learning_rate 0.003 \
+        --pct_start 0.2
+done
